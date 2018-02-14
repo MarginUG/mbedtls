@@ -26,7 +26,6 @@ else ifeq ($(shell uname -s),Darwin)
 MAC_BUILD=1
 SO_OPT=-install_name
 endif
-endif
 
 # To compile as a shared library:
 ifdef SHARED
