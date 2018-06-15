@@ -1,3 +1,9 @@
+debug {
+  MBED_DEBUG="DEBUG=1"
+} else {
+  MBED_DEBUG=""
+}
+
 SOURCES +=$$PWD/library/aes.c \
           $$PWD/library/aesni.c \
           $$PWD/library/arc4.c \
