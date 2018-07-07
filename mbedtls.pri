@@ -4,6 +4,8 @@ debug {
   MBED_DEBUG=""
 }
 
+INCLUDEPATH += $$PWD/include
+
 SOURCES +=$$PWD/library/aes.c \
           $$PWD/library/aesni.c \
           $$PWD/library/arc4.c \
