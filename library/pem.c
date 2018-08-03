@@ -359,6 +359,7 @@ int mbedtls_pem_read_buffer( mbedtls_pem_context *ctx, const char *header, const
 
     if( ( ret = mbedtls_base64_decode( buf, len, &len, s1, s2 - s1 ) ) != 0 )
     {
+        mbedtls_zeroize( buf, len );
         mbedtls_free( buf );
         return( MBEDTLS_ERR_PEM_INVALID_DATA + ret );
     }
@@ -369,6 +370,7 @@ int mbedtls_pem_read_buffer( mbedtls_pem_context *ctx, const char *header, const
     ( defined(MBEDTLS_DES_C) || defined(MBEDTLS_AES_C) )
         if( pwd == NULL )
         {
+            mbedtls_zeroize( buf, len );
             mbedtls_free( buf );
             return( MBEDTLS_ERR_PEM_PASSWORD_REQUIRED );
         }
@@ -401,14 +403,16 @@ int mbedtls_pem_read_buffer( mbedtls_pem_context *ctx, const char *header, const
          * The result will be ASN.1 starting with a SEQUENCE tag, with 1 to 3
          * length bytes (allow 4 to be sure) in all known use cases.
          *
-         * Use that as heurisitic to try detecting password mismatchs.
+         * Use that as a heuristic to try to detect password mismatches.
          */
         if( len <= 2 || buf[0] != 0x30 || buf[1] > 0x83 )
         {
+            mbedtls_zeroize( buf, len );
             mbedtls_free( buf );
             return( MBEDTLS_ERR_PEM_PASSWORD_MISMATCH );
         }
 #else
+        mbedtls_zeroize( buf, len );
         mbedtls_free( buf );
         return( MBEDTLS_ERR_PEM_FEATURE_UNAVAILABLE );
 #endif /* MBEDTLS_MD5_C && MBEDTLS_CIPHER_MODE_CBC &&
@@ -423,6 +427,8 @@ int mbedtls_pem_read_buffer( mbedtls_pem_context *ctx, const char *header, const
 
 void mbedtls_pem_free( mbedtls_pem_context *ctx )
 {
+    if( ctx->buf != NULL )
+        mbedtls_zeroize( ctx->buf, ctx->buflen );
     mbedtls_free( ctx->buf );
     mbedtls_free( ctx->info );
 
@@ -436,7 +442,7 @@ int mbedtls_pem_write_buffer( const char *header, const char *footer,
                       unsigned char *buf, size_t buf_len, size_t *olen )
 {
     int ret;
-    unsigned char *encode_buf, *c, *p = buf;
+    unsigned char *encode_buf = NULL, *c, *p = buf;
     size_t len = 0, use_len, add_len = 0;
 
     mbedtls_base64_encode( NULL, 0, &use_len, der_data, der_len );
@@ -448,7 +454,8 @@ int mbedtls_pem_write_buffer( const char *header, const char *footer,
         return( MBEDTLS_ERR_BASE64_BUFFER_TOO_SMALL );
     }
 
-    if( ( encode_buf = mbedtls_calloc( 1, use_len ) ) == NULL )
+    if( use_len != 0 &&
+        ( ( encode_buf = mbedtls_calloc( 1, use_len ) ) == NULL ) )
         return( MBEDTLS_ERR_PEM_ALLOC_FAILED );
 
     if( ( ret = mbedtls_base64_encode( encode_buf, use_len, &use_len, der_data,

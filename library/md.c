@@ -306,14 +306,12 @@ int mbedtls_md_file( const mbedtls_md_info_t *md_info, const char *path, unsigne
             goto cleanup;
 
     if( ferror( f ) != 0 )
-    {
         ret = MBEDTLS_ERR_MD_FILE_IO_ERROR;
-        goto cleanup;
-    }
-
-    ret = md_info->finish_func( ctx.md_ctx, output );
+    else
+        ret = md_info->finish_func( ctx.md_ctx, output );
 
 cleanup:
+    mbedtls_zeroize( buf, sizeof( buf ) );
     fclose( f );
     mbedtls_md_free( &ctx );
 
